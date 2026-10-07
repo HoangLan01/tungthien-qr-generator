@@ -1,0 +1,27 @@
+{
+  "name": "tung-thien-qr-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tùng Thiện QR Generator",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "build:vercel": "node scripts/build-vercel.mjs",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/config.js && node --check src/routes/qr.routes.js && node --check src/services/qrCodeMonkey.service.js && node --check src/utils/validateUrl.js && node --check src/utils/qrOptions.js && node --check src/middleware/cors.js && node --check src/middleware/qrAccessLog.js && node --check src/middleware/rateLimit.js && node --check src/middleware/errorHandler.js && node --check scripts/build-vercel.mjs && node --check public/app.js && node --check public/qr-api.js && node --check public/qr-form.js && node --check public/sw.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "supertest": "^7.3.1"
+  }
+}

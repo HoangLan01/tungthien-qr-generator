@@ -15,7 +15,10 @@ Content-Type: application/json
 ```json
 {
   "url": "https://example.com",
-  "format": "png"
+  "format": "png",
+  "size": 1000,
+  "bodyColor": "#000000",
+  "bgColor": "#FFFFFF"
 }
 ```
 
@@ -25,8 +28,12 @@ Content-Type: application/json
 |---|---|---|---|
 | `url` | string | yes | `http` hoặc `https`, tối đa 4096 ký tự |
 | `format` | string | no | `png` hoặc `svg`, default `png` |
+| `size` | number | no | `500`, `1000`, `1500` hoặc `2000`; thiếu thì dùng server default 1000 |
+| `bodyColor` | string | no | Màu mã QR hex `#RRGGBB`, default `#000000` |
+| `bgColor` | string | no | Màu nền hex `#RRGGBB`, default `#FFFFFF` |
 
-Không cho client truyền trực tiếp toàn bộ `config` QRCode Monkey ở MVP. Backend giữ preset để kiểm soát output.
+Client chỉ được chọn format, size và hai màu V1.1. Backend không nhận toàn bộ `config`
+QRCode Monkey, yêu cầu nền sáng hơn mã và contrast tối thiểu 4.5:1 trước khi tạo payload.
 
 ## 2. Success response
 
@@ -65,6 +72,9 @@ Response body là binary/file content.
 |---|---|---|
 | 400 | `INVALID_URL` | URL không hợp lệ |
 | 400 | `INVALID_FORMAT` | Format không được hỗ trợ |
+| 400 | `INVALID_SIZE` | Kích thước không thuộc preset hỗ trợ |
+| 400 | `INVALID_COLOR` | Màu không đúng hex `#RRGGBB` |
+| 400 | `LOW_COLOR_CONTRAST` | Màu QR/nền không đủ tương phản để tạo an toàn |
 | 413 | `INPUT_TOO_LONG` | URL quá dài |
 | 429 | `RATE_LIMITED` | Quá nhiều request |
 | 502 | `QR_PROVIDER_ERROR` | Upstream trả lỗi |
@@ -103,7 +113,7 @@ eps
 
 MVP chỉ expose `png` và có thể thêm `svg`.
 
-## 5. Preset MVP
+## 5. Preset MVP và V1.1
 
 ```json
 {
@@ -120,6 +130,10 @@ Lý do:
 - trung tính;
 - phù hợp tài liệu in;
 - không phụ thuộc logo.
+
+V1.1 cho phép bốn size preset `500`, `1000`, `1500`, `2000` px và PNG/SVG.
+Template màu ở frontend chỉ điền hai trường màu sau khi client/backend validation pass;
+không thay đổi shape, logo hoặc error-correction mặc định của provider.
 
 ## 6. RapidAPI
 

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Tạo mã QR miễn phí, nhanh chóng, không quảng cáo.">
+    <meta name="theme-color" content="#126653">
+    <title>Tùng Thiện QR Generator</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/runtime-config.js"></script>
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <main class="qr-card">
+      <header class="intro">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M3 3h10v10H3zM19 3h10v10H19zM3 19h10v10H3z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M6 6h4v4H6zM22 6h4v4h-4zM6 22h4v4H6zM19 19h4v4h-4zM25 19h4v6h-4zM19 25h4v4h-4zM25 27h4v2h-4z" fill="currentColor"/>
+          </svg>
+        </span>
+        <h1>Tùng Thiện QR Generator</h1>
+        <p class="subtitle">Tạo mã QR miễn phí, nhanh chóng, không quảng cáo.</p>
+      </header>
+      <form id="qr-form" novalidate>
+        <label for="url">Đường link</label>
+        <p id="url-help" class="helper">Dán đường link bắt đầu bằng http:// hoặc https://.</p>
+        <input id="url" name="url" type="url" inputmode="url" autocomplete="url"
+          autocapitalize="none" spellcheck="false" placeholder="https://example.com"
+          aria-describedby="url-help url-error" required>
+        <details class="advanced-options">
+          <summary>Tùy chọn nâng cao</summary>
+          <div class="option-grid">
+            <label for="format">Định dạng
+              <select id="format" name="format">
+                <option value="png" selected>PNG</option>
+                <option value="svg">SVG</option>
+              </select>
+            </label>
+            <label for="size">Kích thước
+              <select id="size" name="size">
+                <option value="500">500 px</option>
+                <option value="1000" selected>1000 px</option>
+                <option value="1500">1500 px</option>
+                <option value="2000">2000 px</option>
+              </select>
+            </label>
+          </div>
+          <label for="template">Màu gợi ý
+            <select id="template" name="template">
+              <option value="basic" selected>Cơ bản — đen trên trắng</option>
+              <option value="blue">Xanh dương</option>
+              <option value="green">Xanh lá</option>
+              <option value="custom">Tự chọn</option>
+            </select>
+          </label>
+          <div class="option-grid color-grid">
+            <label for="body-color">Màu mã QR
+              <input id="body-color" name="bodyColor" type="color" value="#000000">
+            </label>
+            <label for="background-color">Màu nền
+              <input id="background-color" name="bgColor" type="color" value="#ffffff">
+            </label>
+          </div>
+          <p id="color-help" class="helper">Chọn mã tối trên nền sáng để quét tốt hơn.</p>
+        </details>
+        <p id="url-error" class="message error" role="alert"></p>
+        <button id="generate-button" class="button primary" type="submit">
+          <span class="spinner" aria-hidden="true" hidden></span>
+          <span id="generate-label">Tạo mã QR</span>
+        </button>
+        <p id="form-status" class="message status" role="status" aria-live="polite" aria-atomic="true"></p>
+      </form>
+      <section id="qr-result" class="result" aria-labelledby="result-title" aria-live="polite" aria-atomic="true" hidden>
+        <h2 id="result-title">Mã QR của bạn</h2>
+        <p class="helper">Sẵn sàng để tải xuống và chia sẻ.</p>
+        <div class="preview-frame">
+          <img id="qr-preview" alt="Mã QR đã tạo" width="320" height="320">
+        </div>
+        <p id="result-url" class="result-url"></p>
+        <div class="result-actions">
+          <a id="download-button" class="button primary" role="button" aria-disabled="true" tabindex="-1" download="tung-thien-qr.png"><span id="download-label">Tải PNG</span></a>
+          <button id="copy-button" class="button secondary" type="button" hidden disabled>Sao chép ảnh</button>
+          <button id="another-button" class="button secondary" type="button">Tạo mã khác</button>
+        </div>
+      </section>
+      <noscript><p class="message error">Vui lòng bật JavaScript trong trình duyệt để sử dụng công cụ.</p></noscript>
+      <footer>
+        <p>Không cần tài khoản. Không quảng cáo.</p>
+        <p>Hệ thống không lưu đường link bạn nhập và không theo dõi lượt quét.</p>
+      </footer>
+    </main>
+  </body>
+</html>

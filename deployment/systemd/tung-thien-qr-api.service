@@ -1,0 +1,20 @@
+[Unit]
+Description=Tung Thien QR Generator API
+After=network.target
+
+[Service]
+Type=simple
+User=qrapp
+Group=qrapp
+WorkingDirectory=/var/www/tung-thien-qr-generator
+EnvironmentFile=/etc/tung-thien-qr-api.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
