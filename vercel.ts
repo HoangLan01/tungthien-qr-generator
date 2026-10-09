@@ -1,9 +1,9 @@
 const apiBase = process.env.QR_API_BASE_URL?.trim().replace(/\/$/, '');
 const connectSource = apiBase ? ` 'self' ${apiBase}` : " 'self'";
 
-export default {
+export const config = {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  framework: "other",
+  framework: null,
   buildCommand: "npm run build:vercel",
   outputDirectory: "dist-vercel",
   cleanUrls: true,

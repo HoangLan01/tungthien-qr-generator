@@ -118,7 +118,8 @@ Mỗi event `qr_request` chỉ có request ID, status, duration và error code. 
 
 ## Vercel — Dashboard
 
-1. Tạo/import project từ repository, chọn **Other**. `vercel.ts` chọn build command
+1. Tạo/import project từ repository, chọn **Other**. `vercel.ts` dùng `framework: null`
+   cho preset này và chọn build command
    `npm run build:vercel` và output `dist-vercel`.
 2. Trong **Settings → Environment Variables**, thêm biến production:
 
