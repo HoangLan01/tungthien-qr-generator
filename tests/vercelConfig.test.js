@@ -12,6 +12,7 @@ test('exports a Vercel config object with valid static header values', () => {
   assert.equal(config.buildCommand, 'npm run build:vercel');
   assert.equal(config.outputDirectory, 'dist-vercel');
   assert.ok(Array.isArray(config.headers));
+  assert.equal(config.headers.length, 1);
   for (const rule of config.headers) {
     assert.equal(typeof rule.source, 'string');
     assert.ok(Array.isArray(rule.headers));
@@ -22,4 +23,7 @@ test('exports a Vercel config object with valid static header values', () => {
       assert.ok(header.value.length > 0);
     }
   }
+  const csp = config.headers[0].headers.find((header) => header.key === 'Content-Security-Policy');
+  assert.match(csp.value, /connect-src 'self' blob:/);
+  assert.doesNotMatch(csp.value, /QR_API_BASE_URL|https:\/\//);
 });

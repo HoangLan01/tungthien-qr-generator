@@ -1,10 +1,7 @@
 const messages = {
   INVALID_URL: 'Đường link chưa hợp lệ. Hãy nhập URL bắt đầu bằng http:// hoặc https://.',
   INPUT_TOO_LONG: 'Đường link quá dài. Vui lòng nhập tối đa 4096 ký tự.',
-  RATE_LIMITED: 'Hệ thống đang có nhiều lượt tạo QR. Vui lòng thử lại sau.',
   QR_GENERATION_ERROR: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
-  QR_SERVICE_UNAVAILABLE: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
-  CORS_FORBIDDEN: 'Chưa thể kết nối máy chủ tạo QR. Vui lòng thử lại.',
   INVALID_SIZE: 'Kích thước QR chưa được hỗ trợ.',
   INVALID_COLOR: 'Màu QR chưa hợp lệ.',
   LOW_COLOR_CONTRAST: 'Màu mã QR cần tối hơn và tương phản rõ với màu nền.',
@@ -61,9 +58,9 @@ export function validateQrOptions({ format, size, bodyColor, bgColor }) {
   };
 }
 
-// Used only if this module is initialized without the application adapter.
+// Used only when this module is initialized without the browser QR adapter.
 async function unavailable() {
-  throw Object.assign(new Error('QR service unavailable'), { code: 'QR_SERVICE_UNAVAILABLE' });
+  throw Object.assign(new Error('QR generator unavailable'), { code: 'QR_GENERATION_ERROR' });
 }
 
 export function initQrForm(document, {

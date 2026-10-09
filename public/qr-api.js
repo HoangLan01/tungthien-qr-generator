@@ -1,19 +1,7 @@
+import QRCode from 'qrcode';
+
 function createClientError(code) {
   return Object.assign(new Error(code), { code });
-}
-
-function contentTypeWithoutParameters(value) {
-  return value?.split(';', 1)[0].trim().toLowerCase();
-}
-
-async function readErrorCode(response) {
-  try {
-    const payload = await response.json();
-    if (typeof payload?.error?.code === 'string') return payload.error.code;
-  } catch {
-    // The server response is intentionally not shown directly to the user.
-  }
-  return 'INTERNAL_ERROR';
 }
 
 export function createQrFilename(now = new Date(), format = 'png') {
@@ -25,76 +13,55 @@ export function createQrFilename(now = new Date(), format = 'png') {
   return `tung-thien-qr-${date}.${format}`;
 }
 
-export function getQrApiEndpoint(apiBase = globalThis.__QR_API_BASE_URL__) {
-  if (apiBase === undefined || apiBase === '') return '/api/qr';
-  if (typeof apiBase !== 'string') throw createClientError('INTERNAL_ERROR');
-  try {
-    const parsed = new URL(apiBase);
-    if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password
-      || parsed.pathname !== '/' || parsed.search || parsed.hash) {
-      throw new Error('Invalid API base URL');
-    }
-    return new URL('/api/qr', parsed.origin).toString();
-  } catch {
-    throw createClientError('INTERNAL_ERROR');
-  }
-}
-
 /**
- * Requests a PNG from the same-origin backend. It never sends a provider key
- * and creates the object URL only after a successful, correctly typed response.
+ * Generates a QR image entirely in the browser. The encoded URL is never sent
+ * to an API or another origin.
  */
 export async function requestQr(url, {
-  fetchImpl = globalThis.fetch,
+  encoder = QRCode,
   createObjectURL = globalThis.URL?.createObjectURL,
-  apiBase = globalThis.__QR_API_BASE_URL__,
+  BlobConstructor = globalThis.Blob,
   format = 'png',
   size = 1000,
   bodyColor = '#000000',
   bgColor = '#FFFFFF',
   now = () => new Date(),
 } = {}) {
-  if (typeof createObjectURL !== 'function') throw createClientError('INTERNAL_ERROR');
-
-  let response;
-  try {
-    response = await fetchImpl(getQrApiEndpoint(apiBase), {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: {
-        Accept: format === 'svg' ? 'image/svg+xml' : 'image/png',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url, format, size, bodyColor, bgColor }),
-    });
-  } catch {
-    throw createClientError('QR_SERVICE_UNAVAILABLE');
+  if (typeof createObjectURL !== 'function' || typeof BlobConstructor !== 'function') {
+    throw createClientError('INTERNAL_ERROR');
   }
 
-  if (!response.ok) throw createClientError(await readErrorCode(response));
-  const expectedContentType = format === 'svg' ? 'image/svg+xml' : 'image/png';
-  if (contentTypeWithoutParameters(response.headers.get('content-type')) !== expectedContentType) {
-    throw createClientError('QR_GENERATION_ERROR');
-  }
-
-  let blob;
-  try {
-    blob = await response.blob();
-  } catch {
-    throw createClientError('QR_GENERATION_ERROR');
-  }
+  const contentType = format === 'svg' ? 'image/svg+xml' : 'image/png';
+  const options = {
+    errorCorrectionLevel: 'M',
+    margin: 4,
+    width: size,
+    color: { dark: bodyColor, light: bgColor },
+  };
 
   try {
+    let blob;
+    if (format === 'svg') {
+      const svg = await encoder.toString(url, { ...options, type: 'svg' });
+      blob = new BlobConstructor([svg], { type: contentType });
+    } else {
+      const dataUrl = await encoder.toDataURL(url, { ...options, type: 'image/png' });
+      const encoded = dataUrl.match(/^data:image\/png;base64,([A-Za-z0-9+/=]+)$/)?.[1];
+      if (!encoded) throw new Error('Invalid PNG output');
+      const binary = globalThis.atob(encoded);
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      blob = new BlobConstructor([bytes], { type: contentType });
+    }
+
     return {
       imageUrl: createObjectURL(blob),
       filename: createQrFilename(now(), format),
-      contentType: expectedContentType,
+      contentType,
       format,
       revokeOnDispose: true,
     };
   } catch {
-    throw createClientError('INTERNAL_ERROR');
+    throw createClientError('QR_GENERATION_ERROR');
   }
 }
 

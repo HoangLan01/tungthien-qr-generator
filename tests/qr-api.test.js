@@ -7,70 +7,95 @@ import {
   requestQr,
 } from '../public/qr-api.js';
 
-test('formats a stable, privacy-preserving PNG filename', () => {
-  assert.equal(createQrFilename(new Date('2026-10-07T12:00:00Z')), 'tung-thien-qr-20261007.png');
-  assert.equal(createQrFilename(new Date('2026-10-07T12:00:00Z'), 'svg'), 'tung-thien-qr-20261007.svg');
+test('formats stable, privacy-preserving download filenames', () => {
+  const now = new Date('2026-10-07T12:00:00Z');
+  assert.equal(createQrFilename(now), 'tung-thien-qr-20261007.png');
+  assert.equal(createQrFilename(now, 'svg'), 'tung-thien-qr-20261007.svg');
 });
 
-test('posts only the same-origin PNG request and creates a Blob URL', async () => {
-  let captured;
+test('generates PNG locally without making an API request', async () => {
+  let capturedOptions;
   let capturedBlob;
-  const result = await requestQr('https://example.com/path?a=1&b=2', {
-    fetchImpl: async (url, options) => {
-      captured = { url, options };
-      return new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
-        status: 200,
-        headers: { 'content-type': 'image/png' },
-      });
+  const encoder = {
+    async toDataURL(url, options) {
+      assert.equal(url, 'https://example.com/path?a=1&b=2');
+      capturedOptions = options;
+      return 'data:image/png;base64,iVBORw0KGgo=';
     },
-    createObjectURL: (blob) => {
+  };
+
+  const result = await requestQr('https://example.com/path?a=1&b=2', {
+    encoder,
+    createObjectURL(blob) {
       capturedBlob = blob;
       return 'blob:test-qr';
     },
     now: () => new Date('2026-10-07T12:00:00Z'),
   });
 
-  assert.equal(captured.url, '/api/qr');
-  assert.equal(captured.options.method, 'POST');
-  assert.equal(captured.options.credentials, 'same-origin');
-  assert.equal(captured.options.cache, 'no-store');
-  assert.deepEqual(captured.options.headers, {
-    Accept: 'image/png',
-    'Content-Type': 'application/json',
-  });
-  assert.deepEqual(JSON.parse(captured.options.body), {
-    url: 'https://example.com/path?a=1&b=2',
-    format: 'png',
-    size: 1000,
-    bodyColor: '#000000',
-    bgColor: '#FFFFFF',
+  assert.deepEqual(capturedOptions, {
+    errorCorrectionLevel: 'M',
+    margin: 4,
+    width: 1000,
+    color: { dark: '#000000', light: '#FFFFFF' },
+    type: 'image/png',
   });
   assert.equal(capturedBlob.type, 'image/png');
-  assert.equal(result.imageUrl, 'blob:test-qr');
-  assert.equal(result.filename, 'tung-thien-qr-20261007.png');
-  assert.equal(result.revokeOnDispose, true);
+  assert.deepEqual(
+    new Uint8Array(await capturedBlob.arrayBuffer()),
+    new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+  );
+  assert.deepEqual(result, {
+    imageUrl: 'blob:test-qr',
+    filename: 'tung-thien-qr-20261007.png',
+    contentType: 'image/png',
+    format: 'png',
+    revokeOnDispose: true,
+  });
 });
 
-test('requests an SVG at a selected size and preserves its download format', async () => {
-  let captured;
+test('generates SVG locally with the selected size and colors', async () => {
+  let capturedOptions;
+  let capturedBlob;
   const result = await requestQr('https://example.com', {
-    fetchImpl: async (_url, options) => {
-      captured = options;
-      return new Response('<svg/>', { status: 200, headers: { 'content-type': 'image/svg+xml' } });
+    encoder: {
+      async toString(_url, options) {
+        capturedOptions = options;
+        return '<svg xmlns="http://www.w3.org/2000/svg"/>';
+      },
     },
-    createObjectURL: () => 'blob:test-svg',
+    createObjectURL(blob) {
+      capturedBlob = blob;
+      return 'blob:test-svg';
+    },
     format: 'svg',
     size: 2000,
     bodyColor: '#0B3D91',
     bgColor: '#FFFFFF',
     now: () => new Date('2026-10-07T12:00:00Z'),
   });
-  assert.equal(captured.headers.Accept, 'image/svg+xml');
-  assert.deepEqual(JSON.parse(captured.body), {
-    url: 'https://example.com', format: 'svg', size: 2000, bodyColor: '#0B3D91', bgColor: '#FFFFFF',
-  });
+
+  assert.equal(capturedOptions.type, 'svg');
+  assert.equal(capturedOptions.width, 2000);
+  assert.deepEqual(capturedOptions.color, { dark: '#0B3D91', light: '#FFFFFF' });
+  assert.equal(capturedBlob.type, 'image/svg+xml');
+  assert.match(await capturedBlob.text(), /<svg/);
   assert.equal(result.filename, 'tung-thien-qr-20261007.svg');
   assert.equal(result.contentType, 'image/svg+xml');
+});
+
+test('the bundled QR engine produces a real PNG without a backend', async () => {
+  let capturedBlob;
+  const result = await requestQr('https://example.com', {
+    size: 500,
+    createObjectURL(blob) {
+      capturedBlob = blob;
+      return 'blob:real-qr';
+    },
+  });
+  const signature = new Uint8Array(await capturedBlob.arrayBuffer()).slice(0, 8);
+  assert.deepEqual(signature, new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]));
+  assert.equal(result.imageUrl, 'blob:real-qr');
 });
 
 test('copies PNG only when the secure Clipboard API is available', async () => {
@@ -80,57 +105,42 @@ test('copies PNG only when the secure Clipboard API is available', async () => {
     clipboard: { write: () => {} },
     ClipboardItemConstructor: class {},
   }), true);
-  assert.equal(canCopyQrImage({ isSecureContext: false, clipboard: { write: () => {} }, ClipboardItemConstructor: class {} }), false);
+  assert.equal(canCopyQrImage({
+    isSecureContext: false,
+    clipboard: { write: () => {} },
+    ClipboardItemConstructor: class {},
+  }), false);
+
   class ClipboardItemMock {
     constructor(data) { this.data = data; }
   }
   await copyQrImage({ imageUrl: 'blob:test', contentType: 'image/png' }, {
-    fetchImpl: async () => new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/png' } }),
+    fetchImpl: async () => new Response(new Uint8Array([1]), {
+      status: 200,
+      headers: { 'content-type': 'image/png' },
+    }),
     clipboard: { write: async (items) => copied.push(items) },
     ClipboardItemConstructor: ClipboardItemMock,
   });
   assert.equal(copied.length, 1);
   assert.ok(copied[0][0].data['image/png']);
-  await assert.rejects(copyQrImage({ imageUrl: 'blob:test', contentType: 'image/svg+xml' }), { code: 'COPY_UNAVAILABLE' });
-});
-
-test('maps API error codes without exposing their raw messages', async () => {
-  const fetchImpl = async () => new Response(JSON.stringify({
-    error: { code: 'QR_GENERATION_ERROR', message: 'private generator diagnostic' },
-  }), {
-    status: 500,
-    headers: { 'content-type': 'application/json' },
-  });
-
   await assert.rejects(
-    requestQr('https://example.com', { fetchImpl, createObjectURL: () => 'blob:unused' }),
-    (error) => error.code === 'QR_GENERATION_ERROR' && !error.message.includes('private generator diagnostic'),
+    copyQrImage({ imageUrl: 'blob:test', contentType: 'image/svg+xml' }),
+    { code: 'COPY_UNAVAILABLE' },
   );
 });
 
-test('rejects unexpected image types and network/object-URL failures', async () => {
-  const jpegResponse = async () => new Response(new Uint8Array([1, 2]), {
-    status: 200,
-    headers: { 'content-type': 'image/jpeg' },
-  });
-  await assert.rejects(
-    requestQr('https://example.com', { fetchImpl: jpegResponse, createObjectURL: () => 'blob:unused' }),
-    (error) => error.code === 'QR_GENERATION_ERROR',
-  );
-
+test('maps local encoder failures without exposing internal details', async () => {
   await assert.rejects(
     requestQr('https://example.com', {
-      fetchImpl: async () => { throw new Error('network-private-detail'); },
+      encoder: { toDataURL: async () => { throw new Error('private encoder diagnostic'); } },
       createObjectURL: () => 'blob:unused',
     }),
-    (error) => error.code === 'QR_SERVICE_UNAVAILABLE' && !error.message.includes('network-private-detail'),
+    (error) => error.code === 'QR_GENERATION_ERROR'
+      && !error.message.includes('private encoder diagnostic'),
   );
-
   await assert.rejects(
-    requestQr('https://example.com', {
-      fetchImpl: async () => new Response('png', { status: 200, headers: { 'content-type': 'image/png' } }),
-      createObjectURL: () => { throw new Error('object-url-private-detail'); },
-    }),
-    (error) => error.code === 'INTERNAL_ERROR' && !error.message.includes('object-url-private-detail'),
+    requestQr('https://example.com', { createObjectURL: null }),
+    { code: 'INTERNAL_ERROR' },
   );
 });
