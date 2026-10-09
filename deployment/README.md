@@ -4,11 +4,11 @@ Topology đã chuyển thành:
 
 ```text
 Browser → https://qr.example.vn (Vercel static frontend)
-        → https://api.example.vn/api/qr (VPS, Nginx → Node.js → RapidAPI)
+        → https://api.example.vn/api/qr (VPS, Nginx → Node.js → local qrcode)
 ```
 
-Vercel chỉ nhận frontend build và public API origin `QR_API_BASE_URL`. RapidAPI key chỉ ở
-`/etc/tung-thien-qr-api.env` trên VPS. Không đưa file này, `.env` hoặc key vào Git/Vercel.
+Vercel chỉ nhận frontend build và public API origin `QR_API_BASE_URL`. VPS tạo QR cục bộ,
+nên không cần QR provider key. Không đưa `/etc/tung-thien-qr-api.env` hoặc `.env` vào Git/Vercel.
 
 ## Giá trị cần chọn trước
 
@@ -54,7 +54,7 @@ sudoedit /etc/tung-thien-qr-api.env
 ```
 
 Trong file này phải đặt `SERVE_STATIC=false`, `TRUST_PROXY=loopback`,
-`QR_ACCESS_LOG=true`, exact `CORS_ALLOWED_ORIGINS` và ba biến RapidAPI. Kiểm tra Node binary
+`QR_ACCESS_LOG=true`, exact `CORS_ALLOWED_ORIGINS` và `QR_DEFAULT_SIZE`. Kiểm tra Node binary
 trước khi cài systemd; nếu kết quả không phải `/usr/bin/node`, sửa `ExecStart` trong service:
 
 ```bash
@@ -105,7 +105,7 @@ curl -i -X OPTIONS https://api.example.vn/api/qr \
 ```
 
 Kết quả mong đợi là `204`, `Access-Control-Allow-Origin` đúng origin và không có wildcard.
-Đừng gọi endpoint QR thật cho đến khi xác nhận RapidAPI quota phù hợp.
+Endpoint QR tạo cục bộ, không tiêu quota API bên thứ ba. Vẫn cần giới hạn request để bảo vệ CPU VPS.
 
 Theo dõi an toàn, không có URL/body:
 
@@ -114,7 +114,7 @@ sudo journalctl -u tung-thien-qr-api -f
 ```
 
 Mỗi event `qr_request` chỉ có request ID, status, duration và error code. Dùng count status
-429/5xx/`QR_PROVIDER_TIMEOUT` cùng quota RapidAPI để theo dõi vận hành.
+429/5xx/`QR_GENERATION_ERROR` để theo dõi vận hành.
 
 ## Vercel — Dashboard
 
@@ -126,7 +126,7 @@ Mỗi event `qr_request` chỉ có request ID, status, duration và error code. 
    QR_API_BASE_URL=https://api.example.vn
    ```
 
-   Đây là public API origin, không phải secret. Không thêm `RAPIDAPI_KEY` vào Vercel.
+   Đây là public API origin, không phải secret. Không cần thêm QR provider key vào Vercel.
 3. Deploy production sau khi API HTTPS/CORS health check thành công.
 4. Gắn frontend custom domain `qr.example.vn` (hoặc cập nhật exact `project.vercel.app`
    vào VPS `CORS_ALLOWED_ORIGINS`), sau đó redeploy frontend nếu origin/API URL đổi.
@@ -151,7 +151,7 @@ Sau khi cả hai domain HTTPS hoạt động:
 2. Preview phải xuất hiện, tải file PNG, mở file đã tải và quét mỗi ảnh bằng ít nhất hai scanner.
 3. Thay URL, tạo QR mới và xác nhận preview/download đổi theo.
 4. Test Chrome desktop, Edge desktop, Chrome Android và Safari iPhone.
-5. Browser Network chỉ được thấy `https://api.example.vn/api/qr`; không được thấy RapidAPI key.
+5. Browser Network chỉ được thấy `https://api.example.vn/api/qr`; không có QR provider key.
 6. Xác nhận API response QR có `Cache-Control: no-store`; thử vượt limit có kiểm soát để thấy
    `429 / RATE_LIMITED`.
 

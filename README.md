@@ -14,8 +14,8 @@ Phiên bản MVP chỉ tập trung vào URL `http://` và `https://`, ưu tiên 
 
 - Frontend: HTML + CSS + JavaScript thuần.
 - Backend: Node.js 20+ + Express.
-- QR engine: QRCode Monkey API thông qua RapidAPI.
-- Backend đóng vai trò proxy để không làm lộ RapidAPI key.
+- QR engine: thư viện mã nguồn mở `qrcode`, chạy ngay trong Node.js.
+- Backend tạo QR cục bộ; URL người dùng không được gửi tới QR provider bên thứ ba.
 - Triển khai production: static frontend trên Vercel; VPS chỉ phục vụ API `/api/qr` và `/health`.
 - HTTPS bắt buộc cho cả frontend và API khi đưa lên môi trường thật.
 
@@ -26,10 +26,10 @@ Các tài liệu bên dưới nằm trong thư mục `implementation/`.
 1. `00-PROJECT-PLAN.md` — kế hoạch tổng thể.
 2. `01-REQUIREMENTS.md` — yêu cầu chức năng và phi chức năng.
 3. `02-TECHNICAL-ARCHITECTURE.md` — kiến trúc kỹ thuật.
-4. `03-API-CONTRACT.md` — hợp đồng API nội bộ và cách tích hợp QRCode Monkey.
+4. `03-API-CONTRACT.md` — hợp đồng API nội bộ và local QR generator.
 5. `PHASE-01-FOUNDATION.md` — khởi tạo dự án và nền tảng.
 6. `PHASE-02-UI-UX.md` — xây dựng giao diện.
-7. `PHASE-03-QR-API-INTEGRATION.md` — tích hợp QRCode Monkey.
+7. `PHASE-03-QR-API-INTEGRATION.md` — tài liệu kiến trúc provider cũ; xem migration hiện hành.
 8. `PHASE-04-PREVIEW-DOWNLOAD.md` — preview, download và xử lý lỗi.
 9. `PHASE-05-SECURITY-PRIVACY.md` — bảo mật, quyền riêng tư, chống lạm dụng.
 10. `PHASE-06-TEST-DEPLOY.md` — kiểm thử, triển khai và vận hành.
@@ -54,29 +54,25 @@ Mở `http://localhost:3000`. Dùng `Ctrl+C` để dừng server.
 Nếu cổng đang bận, sửa `PORT` trong `.env` hoặc chạy `$env:PORT='3100'` trước khi khởi động.
 Biến môi trường của process được ưu tiên hơn `.env`.
 
-Bản hiện tại chạy được khi chưa có `.env` hoặc API key. Các biến QR/quota trong
-`.env.example` được dùng để cấu hình provider ở server. `PORT` vẫn có thể dùng riêng khi
-chưa tích hợp RapidAPI.
-Không đưa API key vào frontend hoặc commit `.env`.
+Ứng dụng tạo QR thật ngay cả khi không có `.env`; `PORT` và `QR_DEFAULT_SIZE` có thể
+được điều chỉnh trong `.env`. Không có API key QR nào cần đặt ở frontend hoặc server.
 
-## Bật tạo QR thật — Phase 03
+## Tạo QR cục bộ
 
-Sau khi đăng ký API trên RapidAPI, mở snippet request **hiện hành** của “Custom QR Code with Logo”
-và sao chép chính xác base URL cùng `X-RapidAPI-Host` vào `.env`. Chỉ điền các biến server sau:
+QR được sinh bởi package `qrcode` trong Node.js, nên không cần tài khoản, key, quota hoặc
+kết nối QR provider ngoài. Cấu hình mặc định:
 
 ```env
-RAPIDAPI_KEY=your-rapidapi-key
-QRCODE_MONKEY_API_BASE=https://base-url-from-current-rapidapi-snippet
-QRCODE_MONKEY_API_HOST=host-from-current-rapidapi-snippet
+QR_DEFAULT_SIZE=1000
 ```
 
-Không ghi key vào `public/`, HTML, JavaScript client hoặc bất kỳ tài liệu Git nào.
-Khởi động lại server sau khi sửa `.env`.
+QR vẫn được tạo qua `/api/qr` để giữ validation, rate limit, output binary, CORS và
+privacy boundary nhất quán. Backend không fetch URL mà người dùng nhập.
 
 ## Bảo mật và quota — Phase 05
 
 `POST /api/qr` được giới hạn mặc định **20 request mỗi IP trong 60 giây** để bảo vệ
-quota provider. Có thể điều chỉnh trên server trong `.env`:
+tài nguyên VPS. Có thể điều chỉnh trên server trong `.env`:
 
 ```env
 RATE_LIMIT_WINDOW_MS=60000
@@ -106,7 +102,7 @@ Invoke-WebRequest -Uri http://localhost:3000/api/qr -Method Post `
     -ContentType 'application/json' -Body $requestBody -OutFile .\tung-thien-qr.png
 ```
 
-Lệnh trên chỉ dùng sau khi đã có cấu hình RapidAPI hợp lệ. Endpoint trả binary
+Endpoint trả binary
 `image/png` hoặc `image/svg+xml`, đặt `Cache-Control: no-store`, và không fetch URL
 được mã hóa. Frontend hiện yêu cầu PNG từ API origin công khai cấu hình khi build Vercel,
 hiển thị preview qua Blob URL và tạo link tải tạm; không có API key trong browser.
@@ -137,10 +133,9 @@ Kết quả mong đợi: `status = ok`.
   `/health`, 404 và middleware xử lý lỗi tập trung.
 - Phase 02: trang chính đã có form URL, validation tiếng Việt, trạng thái loading/lỗi,
   vùng kết quả, nút Tải PNG/Tạo mã khác và CSS responsive.
-- Phase 03: backend validate URL/format, gửi preset QR cố định tới `POST /qr/custom`
-  qua RapidAPI, timeout, kiểm tra MIME binary và map lỗi provider về API contract.
-  Endpoint cần ba biến provider trong `.env`; khi thiếu hoặc sai cấu hình trả
-  `503 / QR_SERVICE_UNAVAILABLE` mà không gọi upstream.
+- Phase 03: backend validate URL/format, tạo QR bằng generator cục bộ, kiểm tra MIME binary
+  và map lỗi tạo ảnh về API contract.
+  Không có provider key, quota hoặc request QR ra Internet.
 - Phase 04: frontend gọi `/api/qr` ở API origin đã cấu hình để lấy PNG binary, tạo Blob URL cho
   preview/tải xuống, đặt filename theo ngày và thu hồi Blob URL khi thay hoặc rời trang.
   URL hợp lệ vẫn sẽ báo lỗi thân thiện khi thiếu/sai cấu hình provider.
@@ -152,7 +147,7 @@ Kết quả mong đợi: `status = ok`.
 - Triển khai HTTPS, reverse proxy client IP, QR scan thật và browser/device matrix thuộc Phase 06.
 - Phase 06: build frontend riêng cho Vercel, VPS API-only, CORS exact-origin, Nginx/systemd
   templates, build/smoke checks và runbook triển khai. Chưa deploy vì repository không có
-  Vercel project, domain, VPS access hoặc RapidAPI secret.
+  Vercel project, domain hoặc VPS access.
 - Phase 07: tùy chọn PNG/SVG, size, màu/preset tương phản, copy PNG có điều kiện, dark mode,
   manifest và service worker không cache QR. Upload logo/local fallback/template hình dạng chỉ
   thực hiện sau khi có scope upload và bằng chứng quét thực tế.
@@ -171,7 +166,7 @@ Kết quả kiểm tra và phần chưa xác minh:
 Runbook tách frontend Vercel và backend VPS: [deployment/README.md](deployment/README.md).
 Vercel cần `QR_API_BASE_URL=https://api.example.vn` ở Production; VPS cần exact
 `CORS_ALLOWED_ORIGINS=https://qr.example.vn`, `SERVE_STATIC=false` và
-`TRUST_PROXY=loopback`. Không đặt RapidAPI key ở Vercel.
+`TRUST_PROXY=loopback`. Không cần đặt QR API key ở Vercel hoặc VPS.
 
 ## Nguyên tắc sản phẩm
 
@@ -186,12 +181,11 @@ Vercel cần `QR_API_BASE_URL=https://api.example.vn` ở Production; VPS cần 
 
 ## Lưu ý về “miễn phí”
 
-QRCode Monkey xác nhận QR được tạo là QR tĩnh, có thể dùng miễn phí và không giới hạn lượt quét. Tuy nhiên API chính thức được cung cấp qua RapidAPI, vì vậy chi phí/quota gọi API phụ thuộc gói RapidAPI đang áp dụng tại thời điểm triển khai.
+QR tạo cục bộ là QR tĩnh, không giới hạn lượt quét và không có chi phí gọi QR API bên thứ ba.
+“Miễn phí” vẫn có nghĩa là người dùng cuối không trả phí, không xem quảng cáo và hệ thống
+không theo dõi lượt quét. VPS/hosting và vận hành vẫn có chi phí riêng.
 
-Do đó, “miễn phí” trong sản phẩm này được hiểu là **người dùng cuối không phải trả phí và không xem quảng cáo**. Backend vẫn cần có cơ chế rate limit và theo dõi quota API để tránh phát sinh chi phí ngoài ý muốn.
+## QR engine
 
-## Tài liệu chính thức
-
-- QRCode Monkey API: https://www.qrcode-monkey.com/qr-code-api-with-logo/
-- QRCode Monkey: https://www.qrcode-monkey.com/
-- RapidAPI listing: https://rapidapi.com/qrcode-monkey/api/custom-qr-code-with-logo
+- `qrcode` Node.js: https://github.com/soldair/node-qrcode
+- Migration và khác biệt với kiến trúc cũ: [LOCAL-QR-MIGRATION.md](implementation/LOCAL-QR-MIGRATION.md)

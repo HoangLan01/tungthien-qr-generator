@@ -75,14 +75,14 @@ export async function requestQr(url, {
   if (!response.ok) throw createClientError(await readErrorCode(response));
   const expectedContentType = format === 'svg' ? 'image/svg+xml' : 'image/png';
   if (contentTypeWithoutParameters(response.headers.get('content-type')) !== expectedContentType) {
-    throw createClientError('QR_PROVIDER_ERROR');
+    throw createClientError('QR_GENERATION_ERROR');
   }
 
   let blob;
   try {
     blob = await response.blob();
   } catch {
-    throw createClientError('QR_PROVIDER_ERROR');
+    throw createClientError('QR_GENERATION_ERROR');
   }
 
   try {

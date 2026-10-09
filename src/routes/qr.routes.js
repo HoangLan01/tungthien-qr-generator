@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createQrCodeMonkeyService, QrServiceError } from '../services/qrCodeMonkey.service.js';
+import { createLocalQrService, QrGenerationError } from '../services/localQr.service.js';
 import { validateQrOptions } from '../utils/qrOptions.js';
 import { validateUrl } from '../utils/validateUrl.js';
 
@@ -10,9 +10,7 @@ const errorMessages = {
   INVALID_SIZE: 'Invalid size.',
   INVALID_COLOR: 'Invalid color.',
   LOW_COLOR_CONTRAST: 'Insufficient color contrast.',
-  QR_PROVIDER_ERROR: 'QR provider error.',
-  QR_SERVICE_UNAVAILABLE: 'QR service unavailable.',
-  QR_PROVIDER_TIMEOUT: 'QR provider timeout.',
+  QR_GENERATION_ERROR: 'QR generation error.',
   UNSUPPORTED_MEDIA_TYPE: 'Unsupported media type.',
 };
 
@@ -24,7 +22,7 @@ function sendError(res, status, code) {
 }
 
 export function createQrRouter({
-  service = createQrCodeMonkeyService(),
+  service = createLocalQrService(),
   rateLimiter,
 } = {}) {
   const router = Router();
@@ -51,7 +49,7 @@ export function createQrRouter({
       const qr = await service.generate({ url: validatedUrl.url, ...options });
       res.type(qr.contentType).send(qr.body);
     } catch (error) {
-      if (error instanceof QrServiceError) {
+      if (error instanceof QrGenerationError) {
         return sendError(res, error.status, error.code);
       }
       next(error);

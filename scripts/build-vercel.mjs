@@ -2,6 +2,7 @@ import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url));
+const assetsDirectory = fileURLToPath(new URL('../assets/', import.meta.url));
 const outputDirectory = fileURLToPath(new URL('../dist-vercel/', import.meta.url));
 
 export function normalizePublicApiBase(value) {
@@ -30,6 +31,7 @@ export async function buildVercelFrontend({
   await rm(targetDirectory, { recursive: true, force: true });
   await mkdir(targetDirectory, { recursive: true });
   await cp(sourceDirectory, targetDirectory, { recursive: true });
+  await cp(assetsDirectory, `${targetDirectory}/assets`, { recursive: true });
   await writeFile(`${targetDirectory}/runtime-config.js`,
     `globalThis.__QR_API_BASE_URL__ = ${JSON.stringify(normalizedApiBase)};\n`, 'utf8');
 }

@@ -7,6 +7,7 @@ import { createApp } from '../src/app.js';
 import {
   readCorsAllowedOrigins,
   readPort,
+  readQrDefaultSize,
   readQrAccessLog,
   readRateLimitConfig,
   readServeStatic,
@@ -33,7 +34,7 @@ test('serves Vietnamese page and frontend assets with security headers', async (
   await request(app).get('/qr-form.js').expect(200).expect('Content-Type', /javascript/);
   await request(app).get('/manifest.webmanifest').expect(200).expect('Content-Type', /json/);
   await request(app).get('/sw.js').expect(200).expect('Content-Type', /javascript/);
-  await request(app).get('/favicon.svg').expect(200).expect('Content-Type', /svg/);
+  await request(app).get('/assets/logo.png').expect(200).expect('Content-Type', /png/);
 });
 
 test('PWA metadata is valid and its service worker does not cache QR or API data', async () => {
@@ -41,7 +42,7 @@ test('PWA metadata is valid and its service worker does not cache QR or API data
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.equal(manifest.display, 'standalone');
   assert.equal(manifest.start_url, '/');
-  assert.match(manifest.icons[0].src, /favicon\.svg/);
+  assert.match(manifest.icons[0].src, /assets\/logo\.png/);
   assert.doesNotMatch(worker, /caches\.|respondWith|\/api\/qr/);
 });
 
@@ -49,10 +50,11 @@ test('health works without provider configuration', async () => {
   await request(createApp()).get('/health').expect(200, { status: 'ok' });
 });
 
-test('QR service is unavailable without provider configuration and returns no-store', async () => {
+test('local QR generation works without provider configuration and returns no-store', async () => {
   const response = await request(createApp()).post('/api/qr')
-    .send({ url: 'https://example.com' }).expect(503).expect('Cache-Control', 'no-store');
-  assert.equal(response.body.error.code, 'QR_SERVICE_UNAVAILABLE');
+    .send({ url: 'https://example.com' }).expect(200).expect('Cache-Control', 'no-store');
+  assert.match(response.headers['content-type'], /image\/png/);
+  assert.deepEqual(response.body.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
 });
 
 test('unknown routes and private project files are not exposed', async () => {
@@ -101,6 +103,9 @@ test('PORT uses a default and rejects invalid values without echoing them', () =
   for (const value of ['0', '65536', '-1', '3.5', 'secret-value']) {
     assert.throws(() => readPort(value), { message: 'PORT must be an integer from 1 to 65535.' });
   }
+  assert.equal(readQrDefaultSize(''), 1000);
+  assert.equal(readQrDefaultSize('2000'), 2000);
+  assert.throws(() => readQrDefaultSize('750'), { message: 'Invalid default QR size configuration.' });
 });
 
 test('rate limit uses a safe default and rejects invalid environment configuration', () => {

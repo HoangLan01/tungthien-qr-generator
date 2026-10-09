@@ -14,7 +14,7 @@ test('optional QR access logger records only safe operational fields', () => {
     timestamp: () => '2026-10-07T12:00:00.000Z',
   });
   const response = Object.assign(new EventEmitter(), {
-    locals: { errorCode: 'QR_PROVIDER_TIMEOUT' },
+    locals: { errorCode: 'QR_GENERATION_ERROR' },
     statusCode: 504,
     headers: {},
     set(key, value) { this.headers[key] = value; },
@@ -30,7 +30,7 @@ test('optional QR access logger records only safe operational fields', () => {
     requestId: 'request-id',
     status: 504,
     durationMs: 57,
-    errorCode: 'QR_PROVIDER_TIMEOUT',
+    errorCode: 'QR_GENERATION_ERROR',
   }]);
   assert.doesNotMatch(JSON.stringify(lines), /private\.example|never-log/);
 });

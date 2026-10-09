@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { getQrApiEndpoint } from '../public/qr-api.js';
-import { QrServiceError } from '../src/services/qrCodeMonkey.service.js';
+import { QrGenerationError } from '../src/services/localQr.service.js';
 
 function createService({ result, error } = {}) {
   const calls = [];
@@ -90,15 +90,13 @@ test('only accepts a JSON request body', async () => {
   assert.deepEqual(calls, []);
 });
 
-test('maps provider failures without leaking upstream details or a key', async () => {
+test('maps local generation failures without leaking internal details', async () => {
   const cases = [
-    [new QrServiceError('QR_SERVICE_UNAVAILABLE', 503), 503, 'QR_SERVICE_UNAVAILABLE'],
-    [new QrServiceError('QR_PROVIDER_ERROR', 502), 502, 'QR_PROVIDER_ERROR'],
-    [new QrServiceError('QR_PROVIDER_TIMEOUT', 504), 504, 'QR_PROVIDER_TIMEOUT'],
+    [new QrGenerationError('QR_GENERATION_ERROR', 500), 500, 'QR_GENERATION_ERROR'],
   ];
 
   for (const [error, status, code] of cases) {
-    error.message = 'upstream response with super-secret-rapid-api-key';
+    error.message = 'internal QR detail';
     const { service } = createService({ error });
     const response = await request(createApp({ qrService: service }))
       .post('/api/qr')
@@ -106,7 +104,7 @@ test('maps provider failures without leaking upstream details or a key', async (
       .expect(status)
       .expect('Cache-Control', 'no-store');
     assert.equal(response.body.error.code, code);
-    assert.doesNotMatch(response.text, /super-secret-rapid-api-key|upstream response/);
+    assert.doesNotMatch(response.text, /internal QR detail/);
   }
 });
 

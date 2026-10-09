@@ -96,15 +96,15 @@ test('copies PNG only when the secure Clipboard API is available', async () => {
 
 test('maps API error codes without exposing their raw messages', async () => {
   const fetchImpl = async () => new Response(JSON.stringify({
-    error: { code: 'QR_PROVIDER_TIMEOUT', message: 'private upstream diagnostic' },
+    error: { code: 'QR_GENERATION_ERROR', message: 'private generator diagnostic' },
   }), {
-    status: 504,
+    status: 500,
     headers: { 'content-type': 'application/json' },
   });
 
   await assert.rejects(
     requestQr('https://example.com', { fetchImpl, createObjectURL: () => 'blob:unused' }),
-    (error) => error.code === 'QR_PROVIDER_TIMEOUT' && !error.message.includes('private upstream diagnostic'),
+    (error) => error.code === 'QR_GENERATION_ERROR' && !error.message.includes('private generator diagnostic'),
   );
 });
 
@@ -115,7 +115,7 @@ test('rejects unexpected image types and network/object-URL failures', async () 
   });
   await assert.rejects(
     requestQr('https://example.com', { fetchImpl: jpegResponse, createObjectURL: () => 'blob:unused' }),
-    (error) => error.code === 'QR_PROVIDER_ERROR',
+    (error) => error.code === 'QR_GENERATION_ERROR',
   );
 
   await assert.rejects(

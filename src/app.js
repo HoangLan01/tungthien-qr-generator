@@ -15,6 +15,7 @@ import { createQrRouter } from './routes/qr.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url));
+const assetsDirectory = fileURLToPath(new URL('../assets/', import.meta.url));
 
 export function createApp({
   isProduction = process.env.NODE_ENV === 'production',
@@ -61,7 +62,10 @@ export function createApp({
     service: qrService,
     rateLimiter: createQrRateLimiter(rateLimitConfig),
   }));
-  if (serveStatic) app.use(express.static(publicDirectory));
+  if (serveStatic) {
+    app.use('/assets', express.static(assetsDirectory));
+    app.use(express.static(publicDirectory));
+  }
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

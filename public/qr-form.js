@@ -2,8 +2,7 @@ const messages = {
   INVALID_URL: 'Đường link chưa hợp lệ. Hãy nhập URL bắt đầu bằng http:// hoặc https://.',
   INPUT_TOO_LONG: 'Đường link quá dài. Vui lòng nhập tối đa 4096 ký tự.',
   RATE_LIMITED: 'Hệ thống đang có nhiều lượt tạo QR. Vui lòng thử lại sau.',
-  QR_PROVIDER_TIMEOUT: 'Yêu cầu tạo QR mất quá nhiều thời gian. Vui lòng thử lại.',
-  QR_PROVIDER_ERROR: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
+  QR_GENERATION_ERROR: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
   QR_SERVICE_UNAVAILABLE: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
   CORS_FORBIDDEN: 'Chưa thể kết nối máy chủ tạo QR. Vui lòng thử lại.',
   INVALID_SIZE: 'Kích thước QR chưa được hỗ trợ.',
@@ -62,7 +61,7 @@ export function validateQrOptions({ format, size, bodyColor, bgColor }) {
   };
 }
 
-// Used only if this module is initialized without the Phase 04 API adapter.
+// Used only if this module is initialized without the application adapter.
 async function unavailable() {
   throw Object.assign(new Error('QR service unavailable'), { code: 'QR_SERVICE_UNAVAILABLE' });
 }

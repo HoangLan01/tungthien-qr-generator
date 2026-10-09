@@ -15,6 +15,14 @@ export function readPort(value = process.env.PORT) {
   return port;
 }
 
+export function readQrDefaultSize(value = process.env.QR_DEFAULT_SIZE) {
+  if (value === undefined || value === '') return 1000;
+  if (!/^(500|1000|1500|2000)$/.test(value)) {
+    throw new Error('Invalid default QR size configuration.');
+  }
+  return Number(value);
+}
+
 function readInteger(value, { fallback, min, max }) {
   if (value === undefined || value === '') return fallback;
   if (!/^\d+$/.test(value)) return null;

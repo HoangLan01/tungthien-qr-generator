@@ -32,8 +32,8 @@ Content-Type: application/json
 | `bodyColor` | string | no | Màu mã QR hex `#RRGGBB`, default `#000000` |
 | `bgColor` | string | no | Màu nền hex `#RRGGBB`, default `#FFFFFF` |
 
-Client chỉ được chọn format, size và hai màu V1.1. Backend không nhận toàn bộ `config`
-QRCode Monkey, yêu cầu nền sáng hơn mã và contrast tối thiểu 4.5:1 trước khi tạo payload.
+Client chỉ được chọn format, size và hai màu V1.1. Backend không nhận cấu hình generator
+tùy ý; nó yêu cầu nền sáng hơn mã và contrast tối thiểu 4.5:1 trước khi tạo ảnh.
 
 ## 2. Success response
 
@@ -77,41 +77,14 @@ Response body là binary/file content.
 | 400 | `LOW_COLOR_CONTRAST` | Màu QR/nền không đủ tương phản để tạo an toàn |
 | 413 | `INPUT_TOO_LONG` | URL quá dài |
 | 429 | `RATE_LIMITED` | Quá nhiều request |
-| 502 | `QR_PROVIDER_ERROR` | Upstream trả lỗi |
-| 503 | `QR_SERVICE_UNAVAILABLE` | Upstream không sẵn sàng |
-| 504 | `QR_PROVIDER_TIMEOUT` | Upstream timeout |
+| 500 | `QR_GENERATION_ERROR` | Local QR generator không tạo được ảnh |
 | 500 | `INTERNAL_ERROR` | Lỗi nội bộ |
 
-## 4. QRCode Monkey upstream
+## 4. Local QR generator
 
-Tài liệu chính thức mô tả:
-
-```text
-POST /qr/custom
-```
-
-Body:
-
-```json
-{
-  "data": "https://example.com",
-  "config": {},
-  "size": 1000,
-  "download": false,
-  "file": "png"
-}
-```
-
-Các format API hỗ trợ theo tài liệu:
-
-```text
-png
-svg
-pdf
-eps
-```
-
-MVP chỉ expose `png` và có thể thêm `svg`.
+Server dùng package `qrcode` để encode URL ngay trong process Node.js. Generator trả
+PNG buffer hoặc SVG string, sau đó route trả binary với content type chuẩn. URL không được
+fetch và không được gửi sang QR API bên thứ ba.
 
 ## 5. Preset MVP và V1.1
 
@@ -132,34 +105,10 @@ Lý do:
 - không phụ thuộc logo.
 
 V1.1 cho phép bốn size preset `500`, `1000`, `1500`, `2000` px và PNG/SVG.
-Template màu ở frontend chỉ điền hai trường màu sau khi client/backend validation pass;
-không thay đổi shape, logo hoặc error-correction mặc định của provider.
+Template màu ở frontend chỉ điền hai trường màu sau khi client/backend validation pass.
+Generator dùng error-correction `M`, quiet-zone margin 4; logo và custom shape chưa hỗ trợ.
 
-## 6. RapidAPI
-
-QRCode Monkey API chính thức được cung cấp thông qua RapidAPI.
-
-Server request cần sử dụng các header do RapidAPI yêu cầu, thông thường gồm API key và API host. Giá trị chính xác của host nên lấy từ snippet hiện hành của API listing khi triển khai.
-
-Ví dụ cấu hình:
-
-```env
-RAPIDAPI_KEY=...
-QRCODE_MONKEY_API_BASE=https://...
-QRCODE_MONKEY_API_HOST=...
-```
-
-Không commit file `.env`.
-
-`.gitignore`:
-
-```gitignore
-.env
-.env.*
-!.env.example
-```
-
-## 7. CORS
+## 6. CORS
 
 Nếu frontend và backend cùng origin:
 
@@ -178,7 +127,7 @@ Access-Control-Allow-Origin: *
 
 một cách mặc định cho production API.
 
-## 8. Content-Disposition
+## 7. Content-Disposition
 
 MVP có thể download phía client bằng Blob URL nên response không bắt buộc phải có `Content-Disposition`.
 

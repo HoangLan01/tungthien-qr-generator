@@ -137,7 +137,7 @@ test('copy button appears only for supported PNG and reports success without raw
 
 test('service error retains URL, restores controls, and does not expose raw error', async (t) => {
   const { get, edit, submit } = setup(t, { generate: async () => {
-    throw Object.assign(new Error('private-provider-detail'), { code: 'QR_PROVIDER_TIMEOUT' });
+    throw Object.assign(new Error('private-generator-detail'), { code: 'QR_GENERATION_ERROR' });
   }});
   edit('https://example.com');
   submit();
@@ -146,8 +146,8 @@ test('service error retains URL, restores controls, and does not expose raw erro
   assert.equal(get('generate-button').disabled, false);
   assert.equal(get('url').readOnly, false);
   assert.equal(get('qr-result').hidden, true);
-  assert.match(get('url-error').textContent, /mất quá nhiều thời gian/);
-  assert.doesNotMatch(get('url-error').textContent, /private-provider-detail/);
+  assert.match(get('url-error').textContent, /Chưa thể tạo mã QR/);
+  assert.doesNotMatch(get('url-error').textContent, /private-generator-detail/);
 });
 
 test('default adapter reports unavailable without showing a fake QR', async (t) => {
