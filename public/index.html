@@ -44,16 +44,16 @@
           </div>
           <label for="template">Mẫu gợi ý
             <select id="template" name="template">
-              <option value="basic" selected>Cơ bản — đen trên trắng</option>
+              <option value="basic">Cơ bản — đen trên trắng</option>
               <option value="blue">Xanh dương</option>
               <option value="green">Xanh lá</option>
-              <option value="branded">Tùng Thiện — logo nhỏ</option>
+              <option value="branded" selected>Tùng Thiện — logo nhỏ</option>
               <option value="custom">Tự chọn</option>
             </select>
           </label>
           <div class="option-grid color-grid">
             <label for="body-color">Màu mã QR
-              <input id="body-color" name="bodyColor" type="color" value="#000000">
+              <input id="body-color" name="bodyColor" type="color" value="#0a5c45">
             </label>
             <label for="background-color">Màu nền
               <input id="background-color" name="bgColor" type="color" value="#ffffff">
@@ -61,13 +61,13 @@
           </div>
           <div class="option-grid brand-options">
             <label class="check-option" for="include-logo">
-              <input id="include-logo" name="includeLogo" type="checkbox">
+              <input id="include-logo" name="includeLogo" type="checkbox" checked>
               <span>Thêm logo phường</span>
             </label>
             <label for="frame-style">Khung
               <select id="frame-style" name="frameStyle">
-                <option value="none" selected>Không khung</option>
-                <option value="label">Khung nhận diện</option>
+                <option value="none">Không khung</option>
+                <option value="label" selected>Khung nhận diện</option>
               </select>
             </label>
           </div>

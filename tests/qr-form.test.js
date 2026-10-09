@@ -57,6 +57,9 @@ test('initial UI hides result and leaves controls ready', (t) => {
   assert.equal(get('download-button').getAttribute('aria-disabled'), 'true');
   assert.equal(get('generate-button').disabled, false);
   assert.equal(get('url').readOnly, false);
+  assert.equal(get('template').value, 'branded');
+  assert.equal(get('include-logo').checked, true);
+  assert.equal(get('frame-style').value, 'label');
 });
 
 test('invalid submit preserves input, focuses it, and never starts generation', (t) => {
@@ -117,6 +120,8 @@ test('advanced selections are passed to generation and update the download label
   get('size').value = '2000';
   get('body-color').value = '#0b3d91';
   get('background-color').value = '#ffffff';
+  get('include-logo').checked = false;
+  get('frame-style').value = 'none';
   edit('https://example.com');
   submit();
   await setImmediate();
