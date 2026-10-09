@@ -26,8 +26,9 @@ Không cần VPS, Nginx, systemd, DNS cho API, CORS, API key hay biến môi tr�
 
 1. Mở trang và tạo QR cho URL ngắn, URL có query/hash và URL Unicode.
 2. Thử PNG và SVG ở các kích thước khác nhau.
-3. Tải file, mở file và quét bằng ít nhất hai ứng dụng hoặc thiết bị.
-4. Trong DevTools → Network, xác nhận khi nhấn **Tạo mã QR** không xuất hiện request `/api/qr` hay request tới domain bên ngoài.
-5. Kiểm tra nút sao chép PNG trên HTTPS ở trình duyệt có Clipboard API.
+3. Thử preset `Tùng Thiện — logo nhỏ`, cả có và không có khung nhận diện.
+4. Tải file, mở file và quét bằng ít nhất hai ứng dụng hoặc thiết bị.
+5. Trong DevTools → Network, xác nhận khi nhấn **Tạo mã QR** không xuất hiện request `/api/qr` hay request tới domain bên ngoài.
+6. Kiểm tra nút sao chép PNG trên HTTPS ở trình duyệt có Clipboard API.
 
 Không coi deployment hoàn tất chỉ vì build pass; khả năng tải xuống và quét QR thật vẫn là kiểm tra bắt buộc.

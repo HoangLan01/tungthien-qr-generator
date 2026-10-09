@@ -4,6 +4,7 @@ const messages = {
   QR_GENERATION_ERROR: 'Chưa thể tạo mã QR lúc này. Vui lòng thử lại.',
   INVALID_SIZE: 'Kích thước QR chưa được hỗ trợ.',
   INVALID_COLOR: 'Màu QR chưa hợp lệ.',
+  INVALID_STYLE: 'Kiểu trình bày QR chưa hợp lệ.',
   LOW_COLOR_CONTRAST: 'Màu mã QR cần tối hơn và tương phản rõ với màu nền.',
   INTERNAL_ERROR: 'Đã có lỗi xảy ra khi tạo mã QR.',
 };
@@ -24,10 +25,11 @@ export function validateInput(value) {
   return { url };
 }
 
-const colorTemplates = {
-  basic: { bodyColor: '#000000', bgColor: '#FFFFFF' },
-  blue: { bodyColor: '#0B3D91', bgColor: '#FFFFFF' },
-  green: { bodyColor: '#0A5C45', bgColor: '#FFFFFF' },
+const qrTemplates = {
+  basic: { bodyColor: '#000000', bgColor: '#FFFFFF', includeLogo: false, frameStyle: 'none' },
+  blue: { bodyColor: '#0B3D91', bgColor: '#FFFFFF', includeLogo: false, frameStyle: 'none' },
+  green: { bodyColor: '#0A5C45', bgColor: '#FFFFFF', includeLogo: false, frameStyle: 'none' },
+  branded: { bodyColor: '#0A5C45', bgColor: '#FFFFFF', includeLogo: true, frameStyle: 'label' },
 };
 
 function relativeLuminance(hex) {
@@ -36,13 +38,23 @@ function relativeLuminance(hex) {
   return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
 }
 
-export function validateQrOptions({ format, size, bodyColor, bgColor }) {
+export function validateQrOptions({
+  format,
+  size,
+  bodyColor,
+  bgColor,
+  includeLogo = false,
+  frameStyle = 'none',
+}) {
   if (!['png', 'svg'].includes(format)) return { error: messages.INVALID_FORMAT };
   if (!Number.isInteger(size) || ![500, 1000, 1500, 2000].includes(size)) {
     return { error: messages.INVALID_SIZE };
   }
   if (!/^#[0-9a-f]{6}$/i.test(bodyColor) || !/^#[0-9a-f]{6}$/i.test(bgColor)) {
     return { error: messages.INVALID_COLOR };
+  }
+  if (typeof includeLogo !== 'boolean' || !['none', 'label'].includes(frameStyle)) {
+    return { error: messages.INVALID_STYLE };
   }
   const foreground = relativeLuminance(bodyColor);
   const background = relativeLuminance(bgColor);
@@ -54,6 +66,8 @@ export function validateQrOptions({ format, size, bodyColor, bgColor }) {
       size,
       bodyColor: bodyColor.toUpperCase(),
       bgColor: bgColor.toUpperCase(),
+      includeLogo,
+      frameStyle,
     },
   };
 }
@@ -87,10 +101,12 @@ export function initQrForm(document, {
   const template = document.querySelector('#template');
   const bodyColor = document.querySelector('#body-color');
   const bgColor = document.querySelector('#background-color');
+  const includeLogo = document.querySelector('#include-logo');
+  const frameStyle = document.querySelector('#frame-style');
   const colorHelp = document.querySelector('#color-help');
   const copyButton = document.querySelector('#copy-button');
   const downloadLabel = document.querySelector('#download-label');
-  const optionControls = [format, size, template, bodyColor, bgColor];
+  const optionControls = [format, size, template, bodyColor, bgColor, includeLogo, frameStyle];
   let loading = false;
   let currentObjectUrl = null;
   let currentOutput = null;
@@ -134,6 +150,8 @@ export function initQrForm(document, {
       size: Number(size.value),
       bodyColor: bodyColor.value,
       bgColor: bgColor.value,
+      includeLogo: includeLogo.checked,
+      frameStyle: frameStyle.value,
     });
   }
   function updateColorHelp() {
@@ -190,11 +208,14 @@ export function initQrForm(document, {
   });
   optionControls.forEach((control) => control.addEventListener('change', () => {
     if (loading) return;
-    if (control === template && colorTemplates[template.value]) {
-      bodyColor.value = colorTemplates[template.value].bodyColor;
-      bgColor.value = colorTemplates[template.value].bgColor;
+    if (control === template && qrTemplates[template.value]) {
+      const selectedTemplate = qrTemplates[template.value];
+      bodyColor.value = selectedTemplate.bodyColor;
+      bgColor.value = selectedTemplate.bgColor;
+      includeLogo.checked = selectedTemplate.includeLogo;
+      frameStyle.value = selectedTemplate.frameStyle;
     }
-    if (control === bodyColor || control === bgColor) template.value = 'custom';
+    if ([bodyColor, bgColor, includeLogo, frameStyle].includes(control)) template.value = 'custom';
     clearError();
     updateColorHelp();
     hideResult();

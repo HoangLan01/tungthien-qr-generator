@@ -68,7 +68,7 @@ input[type="color"] { min-height: 44px; padding: 4px; cursor: pointer; }
 input::placeholder { color: #677972; opacity: 1; }
 input[aria-invalid="true"] { border-color: var(--error); }
 input[readonly] { background: #f3f6f5; }
-:is(input, button, a):focus-visible { outline: 3px solid #2274c5; outline-offset: 3px; }
+:is(input, select, button, a):focus-visible { outline: 3px solid #2274c5; outline-offset: 3px; }
 .button {
   display: inline-flex;
   align-items: center;
@@ -102,6 +102,23 @@ input[readonly] { background: #f3f6f5; }
 .advanced-options label { margin-top: 14px; }
 .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .color-grid label { min-width: 0; }
+.brand-options { align-items: end; }
+.check-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #83968e;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.check-option input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
 .spinner { width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 800ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .result { border-top: 1px solid #dce5e1; margin-top: 28px; padding-top: 24px; text-align: center; }
@@ -127,6 +144,7 @@ footer p { margin: 4px 0; }
   .qr-card { background: #18332c; border-color: #36554b; box-shadow: none; }
   .brand-logo { border-color: #dfece6; }
   input, select { background: #10211d; border-color: #75958a; color: #edf5f1; }
+  .check-option { border-color: #75958a; }
   input[readonly] { background: #24443a; }
   .advanced-options, .result, footer { border-color: #36554b; }
   .secondary { background: #18332c; color: #9ee4c9; border-color: #75958a; }

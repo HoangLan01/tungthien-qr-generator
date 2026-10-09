@@ -37,7 +37,14 @@ test('URL validation trims input, preserves query/hash and rejects unsupported i
 
 test('V1.1 client validation accepts safe presets and rejects low contrast colors', () => {
   assert.deepEqual(validateQrOptions({ format: 'svg', size: 2000, bodyColor: '#0b3d91', bgColor: '#ffffff' }), {
-    options: { format: 'svg', size: 2000, bodyColor: '#0B3D91', bgColor: '#FFFFFF' },
+    options: {
+      format: 'svg',
+      size: 2000,
+      bodyColor: '#0B3D91',
+      bgColor: '#FFFFFF',
+      includeLogo: false,
+      frameStyle: 'none',
+    },
   });
   assert.match(validateQrOptions({ format: 'png', size: 750, bodyColor: '#000000', bgColor: '#FFFFFF' }).error, /Kích thước/);
   assert.match(validateQrOptions({ format: 'png', size: 1000, bodyColor: '#808080', bgColor: '#FFFFFF' }).error, /tương phản/);
@@ -113,9 +120,44 @@ test('advanced selections are passed to generation and update the download label
   edit('https://example.com');
   submit();
   await setImmediate();
-  assert.deepEqual(received, { format: 'svg', size: 2000, bodyColor: '#0B3D91', bgColor: '#FFFFFF' });
+  assert.deepEqual(received, {
+    format: 'svg',
+    size: 2000,
+    bodyColor: '#0B3D91',
+    bgColor: '#FFFFFF',
+    includeLogo: false,
+    frameStyle: 'none',
+  });
   assert.equal(get('download-label').textContent, 'Tải SVG');
   assert.equal(get('copy-button').hidden, true);
+});
+
+test('branded preset enables the small logo, frame, and safe green colors', async (t) => {
+  let received;
+  const { get, edit, submit, window } = setup(t, {
+    generate: async (_url, options) => {
+      received = options;
+      return { imageUrl: 'blob:branded', format: 'png', contentType: 'image/png' };
+    },
+  });
+  get('template').value = 'branded';
+  get('template').dispatchEvent(new window.Event('change', { bubbles: true }));
+  assert.equal(get('body-color').value, '#0a5c45');
+  assert.equal(get('background-color').value, '#ffffff');
+  assert.equal(get('include-logo').checked, true);
+  assert.equal(get('frame-style').value, 'label');
+
+  edit('https://example.com');
+  submit();
+  await setImmediate();
+  assert.deepEqual(received, {
+    format: 'png',
+    size: 1000,
+    bodyColor: '#0A5C45',
+    bgColor: '#FFFFFF',
+    includeLogo: true,
+    frameStyle: 'label',
+  });
 });
 
 test('copy button appears only for supported PNG and reports success without raw details', async (t) => {

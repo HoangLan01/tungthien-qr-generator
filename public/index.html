@@ -42,11 +42,12 @@
               </select>
             </label>
           </div>
-          <label for="template">Màu gợi ý
+          <label for="template">Mẫu gợi ý
             <select id="template" name="template">
               <option value="basic" selected>Cơ bản — đen trên trắng</option>
               <option value="blue">Xanh dương</option>
               <option value="green">Xanh lá</option>
+              <option value="branded">Tùng Thiện — logo nhỏ</option>
               <option value="custom">Tự chọn</option>
             </select>
           </label>
@@ -58,6 +59,19 @@
               <input id="background-color" name="bgColor" type="color" value="#ffffff">
             </label>
           </div>
+          <div class="option-grid brand-options">
+            <label class="check-option" for="include-logo">
+              <input id="include-logo" name="includeLogo" type="checkbox">
+              <span>Thêm logo phường</span>
+            </label>
+            <label for="frame-style">Khung
+              <select id="frame-style" name="frameStyle">
+                <option value="none" selected>Không khung</option>
+                <option value="label">Khung nhận diện</option>
+              </select>
+            </label>
+          </div>
+          <p class="helper">Logo nhỏ chiếm 14% chiều rộng QR và có nền trắng bảo vệ.</p>
           <p id="color-help" class="helper">Chọn mã tối trên nền sáng để quét tốt hơn.</p>
         </details>
         <p id="url-error" class="message error" role="alert"></p>

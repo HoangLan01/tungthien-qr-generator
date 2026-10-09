@@ -2,10 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   canCopyQrImage,
+  composeBrandedSvg,
   copyQrImage,
   createQrFilename,
   requestQr,
 } from '../public/qr-api.js';
+
+const qrSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 29 29"><path fill="#FFFFFF" d="M0 0h29v29H0z"/><path stroke="#0A5C45" d="M4 4.5h7"/></svg>';
+const logoDataUrl = 'data:image/png;base64,iVBORw0KGgo=';
 
 test('formats stable, privacy-preserving download filenames', () => {
   const now = new Date('2026-10-07T12:00:00Z');
@@ -82,6 +86,68 @@ test('generates SVG locally with the selected size and colors', async () => {
   assert.match(await capturedBlob.text(), /<svg/);
   assert.equal(result.filename, 'tung-thien-qr-20261007.svg');
   assert.equal(result.contentType, 'image/svg+xml');
+});
+
+test('composes a small centered logo and optional external frame in SVG', () => {
+  const branded = composeBrandedSvg(qrSvg, {
+    size: 1000,
+    includeLogo: true,
+    frameStyle: 'label',
+    logoDataUrl,
+  });
+  assert.match(branded, /data-logo-ratio="0\.14"/);
+  assert.match(branded, /width="106\.4" height="106\.4"/);
+  assert.match(branded, /QUÉT MÃ ĐỂ TRUY CẬP/);
+  assert.match(branded, /PHƯỜNG TÙNG THIỆN/);
+  assert.match(branded, /viewBox="0 0 29 29"/);
+});
+
+test('uses high error correction and embeds the logo in decorated SVG output', async () => {
+  let encoderOptions;
+  let outputBlob;
+  const result = await requestQr('https://example.com', {
+    encoder: {
+      async toString(_url, options) {
+        encoderOptions = options;
+        return qrSvg;
+      },
+    },
+    getLogoDataUrl: async () => logoDataUrl,
+    createObjectURL(blob) {
+      outputBlob = blob;
+      return 'blob:branded-svg';
+    },
+    format: 'svg',
+    includeLogo: true,
+    frameStyle: 'label',
+  });
+  assert.equal(encoderOptions.errorCorrectionLevel, 'H');
+  assert.match(await outputBlob.text(), /data-logo-ratio="0\.14"/);
+  assert.equal(result.imageUrl, 'blob:branded-svg');
+});
+
+test('rasterizes the same decorated SVG for PNG output', async () => {
+  let rasterizedSvg;
+  let outputBlob;
+  const result = await requestQr('https://example.com', {
+    encoder: { toString: async () => qrSvg },
+    getLogoDataUrl: async () => logoDataUrl,
+    rasterizeSvg: async (svg, { size }) => {
+      assert.equal(size, 500);
+      rasterizedSvg = svg;
+      return new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+    },
+    createObjectURL(blob) {
+      outputBlob = blob;
+      return 'blob:branded-png';
+    },
+    size: 500,
+    includeLogo: true,
+    frameStyle: 'none',
+  });
+  assert.match(rasterizedSvg, /data-logo-ratio="0\.14"/);
+  assert.equal(outputBlob.type, 'image/png');
+  assert.equal(result.imageUrl, 'blob:branded-png');
 });
 
 test('the bundled QR engine produces a real PNG without a backend', async () => {

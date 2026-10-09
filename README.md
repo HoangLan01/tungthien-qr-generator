@@ -12,6 +12,7 @@ Trình duyệt → frontend tĩnh trên Vercel
 
 - HTML, CSS và JavaScript thuần.
 - `qrcode` chạy trực tiếp trong trình duyệt, hỗ trợ PNG/SVG, kích thước và màu sắc.
+- Preset `Tùng Thiện` có logo nhỏ 14%, error correction `H` và khung nhận diện tùy chọn.
 - `esbuild` đóng gói mã nguồn và thư viện thành một file `dist-vercel/app.js` tự chứa.
 - Không có `/api/qr`, CORS, API key, biến môi trường production hoặc máy chủ Node.js.
 - CSP chỉ cho phép tài nguyên cùng origin; `blob:` chỉ dùng cho ảnh QR tạm thời và thao tác sao chép ảnh.
@@ -57,5 +58,6 @@ Xem [deployment/README.md](deployment/README.md). Không cần khai báo `QR_API
 - Không có database, analytics, session replay hoặc access log.
 - QR là QR tĩnh, không giới hạn lượt quét và không phụ thuộc server sau khi tải trang.
 - Cần quét thử file PNG/SVG trên thiết bị thật trước khi dùng để in ấn hoặc phát hành.
+- Logo được lấy từ asset nội bộ, được nhúng vào file tải xuống và không gửi tới dịch vụ bên ngoài.
 
 Thư mục `implementation/` lưu lịch sử các giai đoạn phát triển cũ, trong đó có kiến trúc backend trước khi chuyển sang static-only; nó không còn là hướng dẫn triển khai hiện hành.
